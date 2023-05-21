@@ -48,7 +48,7 @@ python method/DC_DSA_DM/main_DM.py --method DM --dataset CIFAR10 --ipc 10 --alph
 
 The weights utilized in our study are outlined below:
 
-![image-20230521115016844](docs/weight of clom.png)
+<p align="center"><img src='docs/weight of clom.png' width=700></p>
 
 ### CLOM with a model pool
 
@@ -69,8 +69,7 @@ Add new model architectures into `--models_pool` directly, and there are two ava
    ```
 
 Below are the weights we employed for CLOM with a model pool on CIFAR-10 with 50 images per class:
-
-![image-20230521115741557](docs/weight of clom with a model pool (C10-50).png)
+<p align="center"><img src='docs/weight of clom with a model pool (C10-50).png' width=700></p>
 
 ## Validate synthesis dataset
 
