@@ -21,7 +21,6 @@ def train_model(args):
 
     if args.data_path is None:
         args.data_path = os.path.join('data', args.dataset)
-    print(os.path.join('data', args.dataset))
 
     if not os.path.isdir(args.data_path):
         os.makedirs(args.data_path, exist_ok=True)

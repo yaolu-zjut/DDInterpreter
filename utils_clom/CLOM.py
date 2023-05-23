@@ -30,8 +30,8 @@ class CLOM(object):
         elif len(alphas) == 1:
             self.alphas = dict()
             for model_arch in self.models_pool:
-                self.alphas[model_arch] = alphas
-                print(f"alpha for {model_arch}: {alphas}")
+                self.alphas[model_arch] = alphas[0]
+                print(f"alpha for {model_arch}: {alphas[0]}")
         else:
             print("check alphas list")
             exit(0)
@@ -68,7 +68,6 @@ class CLOM(object):
         model_arch = random.sample(self.models_pool, 1)[0]
         alpha = self.alphas[model_arch]
         index = random.randint(0, self.models_num - 1)
-        # print(f"select arch: {model_arch}, index: {index}, alpha: {alpha}")
         # get pre-trained model(training on original training set)
         model = self.pretrained_models_pool[model_arch][index]
         output = model(image)
