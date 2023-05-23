@@ -27,13 +27,13 @@ Execute following commands to generated synthesis dataset by using CLOM on the b
 ### DC+CLOM
 
 ```bash
-python method/DC_DSA_DM/main.py --method DC --dataset CIFAR10 --model ConvNet --ipc 10 --alphas 2000 --models_pool ConvNet --model_num 10
+python method/DC_DSA_DM/main.py --method DC --dataset CIFAR10 --model ConvNet --ipc 10 --alphas 1000 --models_pool ConvNet --model_num 10
 ```
 
 ### DSA+CLOM
 
 ```bash
-python method/DC_DSA_DM/main.py --method DSA --dataset CIFAR10 --model ConvNet --ipc 10 --init real --dsa_strategy color_crop_cutout_flip_scale_rotate --alphas 1000 --models_pool ConvNet --model_num 10
+python method/DC_DSA_DM/main.py --method DSA --dataset CIFAR10 --model ConvNet --ipc 10 --init real --dsa_strategy color_crop_cutout_flip_scale_rotate --alphas 5000 --models_pool ConvNet --model_num 10
 ```
 
 ### DM+CLOM
@@ -44,7 +44,7 @@ python method/DC_DSA_DM/main_DM.py --method DM --dataset CIFAR10 --ipc 10 --alph
 
 * The synthesis dataset will be saved at `./condensed/[dataset]/[method]/IPC[ipc]`
 * Use the default path of original dataset `./data/[dataset]` or set `--data_path` to specify the path
-*  `--alphas` ， `--models_pool` , and `model_num`  represent the weight of CLOM, the architecture of models and the number of each architecture  respectively. 
+*  `--alphas` ， `--models_pool` , and `--model_num`  represent the weight of CLOM, the architecture of models and the number of each architecture  respectively. 
 
 The weights utilized in our study are outlined below:
 
