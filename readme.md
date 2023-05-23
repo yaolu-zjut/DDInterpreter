@@ -2,7 +2,7 @@
 
 This is official code of paper "Which Assessment Should be Prioritized in Dataset Distillation?". 
 
-> **Abstract:** Dataset Distillation (DD) is a prominent technique that encapsulates the knowledge from a large-scale dataset into a smaller, synthetic dataset. Currently, the standard evaluation procedure for DD involves training a validation model with the synthetic dataset and testing it on the original test set. It inevitably introduces additional cost for tuning the model training, and the procedure is inapplicable when the test set is unavailable. Therefore, we urgently need a more practical assessment to evaluate the quality of synthetic datasets. In this work, we perform a comprehensive empirical analysis on some previous matching metrics and various assessments at different levels of information, including images, features and semantics. We draw the conclusion that the classification accuracy of synthetic data on model trained on the original data, dubbed as Original Model (OM), has a strong correlation with the distillation performance. In addition, based on the observation, we propose an auxiliary regularizing term with the Classification Loss of pre-trained Original Model (CLOM) for stably guiding the optimization direction. Extensive experiments are conducted to validate that CLOM provides consistent performance improvement across multiple baselines. Our code is available at https://anonymous.4open.science/r/DDInterpreter-0DC5.
+> **Abstract:** Dataset Distillation (DD) is a prominent technique that encapsulates the knowledge from a large-scale dataset into a smaller, synthetic dataset. Currently, the standard evaluation procedure for DD involves training a validation model with the synthetic dataset and testing it on the original test set. It inevitably introduces additional cost for tuning the model training, and the procedure is inapplicable when the test set is unavailable. Therefore, we urgently need a more practical assessment to evaluate the quality of synthetic datasets. In this work, we perform a comprehensive empirical analysis on some previous matching metrics and various assessments at different levels of information, including images, features and semantics. We draw the conclusion that the classification accuracy of synthetic data on model trained on the original data, dubbed as Original Model (OM), has a strong correlation with the distillation performance. In addition, based on the observation, we propose an auxiliary regularizing term with the Classification Loss of pre-trained Original Model (CLOM) for stably guiding the optimization direction. Extensive experiments are conducted to validate that CLOM provides consistent performance improvement across multiple baselines.
 
 ## Setup
 
@@ -48,7 +48,7 @@ python method/DC_DSA_DM/main_DM.py --method DM --dataset CIFAR10 --ipc 10 --alph
 
 The weights utilized in our study are outlined below:
 
-![image-20230521115016844](docs/weight of clom.png)
+<p align="center"><img src='docs/weight of clom.png' width=700></p>
 
 ### CLOM with a model pool
 
@@ -69,8 +69,7 @@ Add new model architectures into `--models_pool` directly, and there are two ava
    ```
 
 Below are the weights we employed for CLOM with a model pool on CIFAR-10 with 50 images per class:
-
-![image-20230521115741557](docs/weight of clom with a model pool (C10-50).png)
+<p align="center"><img src='docs/weight of clom with a model pool (C10-50).png' width=700></p>
 
 ## Validate synthesis dataset
 
