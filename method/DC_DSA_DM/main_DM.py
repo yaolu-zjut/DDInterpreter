@@ -72,7 +72,6 @@ def main():
 
     data_save = []
 
-    print("Preparing for Clom")
     clom = CLOM(args, args.models_pool, args.model_num, args.alphas, channel, num_classes, im_size)
     clom.test_models_performance(testloader)
 
