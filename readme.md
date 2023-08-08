@@ -46,7 +46,7 @@ python method/DC_DSA_DM/main_DM.py --method DM --dataset CIFAR10 --ipc 10 --alph
 * Use the default path of original dataset `./data/[dataset]` or set `--data_path` to specify the path
 *  `--alphas` ， `--models_pool` , and `--model_num`  represent the weight of CLOM, the architecture of models and the number of each architecture  respectively. 
 
-The weights utilized in our study are outlined below:
+% The weights utilized in our study are outlined below:
 
 <p align="center"><img src='docs/weight of clom.png' width=700></p>
 
