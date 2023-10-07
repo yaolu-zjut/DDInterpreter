@@ -49,6 +49,7 @@ python method/DC_DSA_DM/main.py --method DC --dataset CIFAR10 --model ConvNet --
    `--epoch`: training epoch the models are at
 
   `--source_dataset`: the dataset(domain) the models are trained on
+  
   `--CCLoM_batch_size`: sample size from real dataset
 
 ## Validate synthesis dataset
