@@ -57,7 +57,7 @@ def main(args):
 
     # load original dataset
     args.dsa_param = ParamDiffAug()
-    channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args)
+    channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args.dataset, args.data_path)
 
     # get synthesis dataset
     syn_dst , _, _ = load_syn_data(args.synthesis_data_path)
