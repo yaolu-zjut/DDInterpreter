@@ -23,6 +23,8 @@ def validate(val_loader, model, criterion, args):
                 target = target.cuda(args.gpu, non_blocking=True)
             # compute output
             output = model(images)
+            if target.dim() == 2:
+                target = target.squeeze().long()
 
             loss = criterion(output, target)
 
@@ -59,6 +61,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, aug=False):
 
         # compute output
         output = model(images)
+        if target.dim() == 2:
+            target = target.squeeze().long()
 
         loss = criterion(output, target)
 

@@ -9,8 +9,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torchvision.utils import save_image
+
 from utils import get_loops, get_dataset, get_network, get_eval_pool, evaluate_synset, get_daparam, match_loss, get_time, TensorDataset, epoch, DiffAugment, ParamDiffAug
-from utils_clom.CLOM import CLOM
+
+from utils_clom.CLoM import CLoM, CCLoM
+from utils_clom.Dataloader import get_dataset_info
 
 def main():
     parser = argparse.ArgumentParser(description='Parameter Processing')
@@ -33,9 +36,17 @@ def main():
     parser.add_argument('--save_path', type=str, default=None, help='path to save results')
     parser.add_argument('--dis_metric', type=str, default='ours', help='distance metric')
     parser.add_argument("--gpu", default=0, type=int, help="Which GPU to use for training")
-    parser.add_argument('--alphas', type=float, nargs='+', default=None, help='alphas of clom')
-    parser.add_argument("--models_pool", type=str, nargs='+', default="ConvNet", help="model pool")
-    parser.add_argument('--model_num', type=int, default=5, help='number of pre-trained models')
+
+    parser.add_argument('--CLoM', action='store_true', default=False, help='use CLoM')
+    parser.add_argument('--CCLoM', action='store_true', default=False, help='use CCLoM')
+
+    parser.add_argument('--alphas', type=float, nargs='+', default=None, help='alphas of CLoM/CCLoM')
+    parser.add_argument("--models_pool", type=str, nargs='+', default=None, help="model pool")
+    parser.add_argument('--model_num', type=int, default=1, help='number of pre-trained models')
+    parser.add_argument('--epoch', type=int, default=150, help='which epoch to use')
+    parser.add_argument('--source_dataset', type=str, default=None, help='source dataset')
+
+    parser.add_argument('--CCLoM_batch_size', type=int, default=None, help='batch size of CCLoM')
 
     args = parser.parse_args()
     args.method = 'DM'
@@ -45,24 +56,39 @@ def main():
     args.dsa_param = ParamDiffAug()
     args.dsa = False if args.dsa_strategy in ['none', 'None'] else True
 
-    if args.save_path is None:
-        args.save_path = os.path.join('condensed', args.dataset, args.method, "IPC"+str(args.ipc))
+    if args.CLoM == True and args.CCLoM == True:
+        print("can't use CLoM and CCLoM at the same time")
+        exit(0)
 
     if args.data_path is None:
         args.data_path = os.path.join('data', args.dataset)
 
-    print("data path:", args.data_path)
-    print("save path:", args.save_path)
-
     if not os.path.exists(args.data_path):
         os.makedirs(args.data_path, exist_ok=True)
+
+    if args.save_path is None:
+        args.save_path = os.path.join('condensed', args.dataset, args.method, "IPC" + str(args.ipc))
+
+    if args.CLoM:
+        args.save_path = os.path.join(args.save_path, 'CLoM', f'MP{args.models_pool}_Nm[{args.model_num}]_Epoch[{args.epoch}]',
+                                      f'alphas{args.models_pool}->{args.alphas}')
+    elif args.CCLoM:
+        args.save_path = os.path.join(args.save_path, 'CCLoM', f'{args.source_dataset}->{args.dataset}',
+                                      f"MP{args.models_pool}_Nm[{args.model_num}]_Epoch[{args.epoch}]",
+                                      f'alphas{args.models_pool}->{args.alphas}')
+    else:
+        args.save_path = os.path.join(args.save_path, 'original_method')
 
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path, exist_ok=True)
 
+    print("data path:", args.data_path)
+    print("save path:", args.save_path)
+
     eval_it_pool = np.arange(0, args.Iteration+1, 2000).tolist() if args.eval_mode == 'S' or args.eval_mode == 'SS' else [args.Iteration] # The list of iterations when we evaluate models and record results.
     print('eval_it_pool: ', eval_it_pool)
     channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args.dataset, args.data_path)
+
     model_eval_pool = get_eval_pool(args.eval_mode, args.model, args.model)
 
 
@@ -72,8 +98,20 @@ def main():
 
     data_save = []
 
-    clom = CLOM(args, args.models_pool, args.model_num, args.alphas, channel, num_classes, im_size)
-    clom.test_models_performance(testloader)
+    # initialize CLoM/CCLoM
+    our_loss = None
+    if args.CLoM:
+        print("initialize CLoM")
+        args.source_dataset = args.dataset
+        source_dataset_channel, source_dataset_im_size, source_dataset_num_classes = get_dataset_info(args.source_dataset)
+        our_loss = CLoM(args, args.source_dataset, source_dataset_channel, source_dataset_num_classes, source_dataset_im_size,
+                        args.models_pool, args.model_num, args.alphas, args.epoch)
+    elif args.CCLoM:
+        print("initialize CCLoM")
+        source_dataset_channel, source_dataset_im_size, source_dataset_num_classes = get_dataset_info(args.source_dataset)
+        our_loss = CCLoM(args, args.ipc, args.CCLoM_batch_size,
+                         args.source_dataset, source_dataset_channel, source_dataset_num_classes, source_dataset_im_size,
+                         args.models_pool, args.model_num, args.alphas, args.epoch)
 
     for exp in range(args.num_exp):
         print('\n================== Exp %d ==================\n '%exp)
@@ -92,8 +130,6 @@ def main():
         images_all = torch.cat(images_all, dim=0).to(args.device)
         labels_all = torch.tensor(labels_all, dtype=torch.long, device=args.device)
 
-
-
         for c in range(num_classes):
             print('class c = %d: %d real images'%(c, len(indices_class[c])))
 
@@ -101,9 +137,12 @@ def main():
             idx_shuffle = np.random.permutation(indices_class[c])[:n]
             return images_all[idx_shuffle]
 
+        if args.CCLoM:
+            print("CCLoM set real data")
+            our_loss.set_real_data(images_all, labels_all, num_classes)
+
         for ch in range(channel):
             print('real images channel %d, mean = %.4f, std = %.4f'%(ch, torch.mean(images_all[:, ch]), torch.std(images_all[:, ch])))
-
 
         ''' initialize the synthetic data '''
         image_syn = torch.randn(size=(num_classes*args.ipc, channel, im_size[0], im_size[1]), dtype=torch.float, requires_grad=True, device=args.device)
@@ -115,7 +154,6 @@ def main():
                 image_syn.data[c*args.ipc:(c+1)*args.ipc] = get_images(c, args.ipc).detach().data
         else:
             print('initialize synthetic data from random noise')
-
 
         ''' training '''
         optimizer_img = torch.optim.SGD([image_syn, ], lr=args.lr_img, momentum=0.5) # optimizer_img for synthetic data
@@ -205,14 +243,9 @@ def main():
 
                 loss += torch.sum((torch.mean(output_real.reshape(num_classes, args.batch_real, -1), dim=1) - torch.mean(output_syn.reshape(num_classes, args.ipc, -1), dim=1))**2)
 
-
-            loss_DM = loss.item()
-            print("it:", it, "Loss of DM:", loss_DM)
-
-            ''' calculate CLOM using current syn-set'''
-            loss += clom.calculate_loss(image_syn, label_syn)
-            print("it:", it, "Loss of CLOM:", loss.item() - loss_DM)
-            print("it:", it, "Whole Loss:", loss.item())
+            if args.CLoM or args.CCLoM:
+                ''' calculate CLoM/CCLoM'''
+                loss += our_loss.calculate_loss(image_syn, label_syn)
 
             optimizer_img.zero_grad()
             loss.backward()

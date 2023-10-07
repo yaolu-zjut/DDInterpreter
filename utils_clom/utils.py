@@ -1,19 +1,17 @@
-import logging
 import os
 import random
-import sys
-import time
-from copy import deepcopy
+
+import logging
+
+from scipy.ndimage.interpolation import rotate as scipyrotate
 
 import numpy
-from scipy.ndimage.interpolation import rotate as scipyrotate
+import numpy as np
+
 import torch
 from torch.backends import cudnn
 from torch.utils.data import Dataset
-# import gpustat
-import numpy as np
 import torch.nn.functional as F
-from torchvision.utils import save_image
 
 
 class TensorDataset(Dataset):
@@ -26,107 +24,6 @@ class TensorDataset(Dataset):
 
     def __len__(self):
         return self.images.shape[0]
-
-
-def get_loops(ipc):
-    # Get the two hyper-parameters of outer-loop and inner-loop.
-    # The following values are empirically good.
-    if ipc == 1:
-        outer_loop, inner_loop = 1, 1
-    elif ipc == 10:
-        outer_loop, inner_loop = 10, 50
-    elif ipc == 20:
-        outer_loop, inner_loop = 20, 25
-    elif ipc == 30:
-        outer_loop, inner_loop = 30, 20
-    elif ipc == 40:
-        outer_loop, inner_loop = 40, 15
-    elif ipc == 50:
-        outer_loop, inner_loop = 50, 10
-    else:
-        outer_loop, inner_loop = 0, 0
-        exit('loop hyper-parameters are not defined for %d ipc' % ipc)
-    return outer_loop, inner_loop
-
-
-def match_loss(gw_syn, gw_real, args, device):
-    dis = torch.tensor(0.0).to(device)
-    print("metric:", args.dis_metric)
-    if args.dis_metric == 'ours':
-        for ig in range(len(gw_real)):
-            gwr = gw_real[ig]
-            gws = gw_syn[ig]
-            dis += distance_wb(gwr, gws)
-
-    elif args.dis_metric == 'mse':
-        gw_real_vec = []
-        gw_syn_vec = []
-        for ig in range(len(gw_real)):
-            gw_real_vec.append(gw_real[ig].reshape((-1)))
-            gw_syn_vec.append(gw_syn[ig].reshape((-1)))
-        gw_real_vec = torch.cat(gw_real_vec, dim=0)
-        gw_syn_vec = torch.cat(gw_syn_vec, dim=0)
-        dis = torch.sum((gw_syn_vec - gw_real_vec) ** 2)
-
-    elif args.dis_metric == 'cos':
-        gw_real_vec = []
-        gw_syn_vec = []
-        for ig in range(len(gw_real)):
-            gw_real_vec.append(gw_real[ig].reshape((-1)))
-            gw_syn_vec.append(gw_syn[ig].reshape((-1)))
-        gw_real_vec = torch.cat(gw_real_vec, dim=0)
-        gw_syn_vec = torch.cat(gw_syn_vec, dim=0)
-        dis = 1 - torch.sum(gw_real_vec * gw_syn_vec, dim=-1) / (
-                torch.norm(gw_real_vec, dim=-1) * torch.norm(gw_syn_vec, dim=-1) + 0.000001)
-
-    else:
-        exit('unknown distance function: %s' % args.dis_metric)
-
-    return dis
-
-
-def distance_wb(gwr, gws):
-    shape = gwr.shape
-    if len(shape) == 4:  # conv, out*in*h*w
-        gwr = gwr.reshape(shape[0], shape[1] * shape[2] * shape[3])
-        gws = gws.reshape(shape[0], shape[1] * shape[2] * shape[3])
-    elif len(shape) == 3:  # layernorm, C*h*w
-        gwr = gwr.reshape(shape[0], shape[1] * shape[2])
-        gws = gws.reshape(shape[0], shape[1] * shape[2])
-    elif len(shape) == 2:  # linear, out*in
-        tmp = 'do nothing'
-    elif len(shape) == 1:  # batchnorm/instancenorm, C; groupnorm x, bias
-        gwr = gwr.reshape(1, shape[0])
-        gws = gws.reshape(1, shape[0])
-        return torch.tensor(0, dtype=torch.float, device=gwr.device)
-    print("dis = A*B/|A|*|B|")
-    dis_weight = torch.sum(
-        torch.sum(gwr * gws, dim=-1) / (torch.norm(gwr, dim=-1) * torch.norm(gws, dim=-1) + 0.000001))
-    dis = dis_weight
-    return dis
-
-
-def create_logger(save_path='', file_type='', level='debug'):
-    if level == 'debug':
-        _level = logging.DEBUG
-    elif level == 'info':
-        _level = logging.INFO
-
-    logger = logging.getLogger()
-    logger.setLevel(_level)
-
-    cs = logging.StreamHandler()
-    cs.setLevel(_level)
-    logger.addHandler(cs)
-
-    if save_path != '':
-        file_name = os.path.join(save_path, file_type + '_log.txt')
-        fh = logging.FileHandler(file_name, mode='w')
-        fh.setLevel(_level)
-
-        logger.addHandler(fh)
-
-    return logger
 
 
 def set_gpu(args, model):
@@ -145,7 +42,6 @@ def set_gpu(args, model):
         model = torch.nn.DataParallel(model, device_ids=args.multigpu).cuda(
             args.multigpu[0]
         )
-
     cudnn.benchmark = True
 
     return model
@@ -178,113 +74,6 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 
-def get_lr(optimizer):
-    return optimizer.param_groups[0]["lr"]
-
-
-def _run_dir_exists(run_base_dir):
-    log_base_dir = run_base_dir / "logs"
-    ckpt_base_dir = run_base_dir / "checkpoints"
-
-    return log_base_dir.exists() or ckpt_base_dir.exists()
-
-
-class Logger(object):
-    def __init__(self, filename='default.log', stream=sys.stdout):
-        self.terminal = stream
-        self.log = open(filename, 'a')
-
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
-
-    def flush(self):
-        pass
-
-
-def progress_bar(current, total, msg=None):
-    _, term_width = os.popen('stty size', 'r').read().split()
-    term_width = int(term_width)
-
-    TOTAL_BAR_LENGTH = 65.
-    last_time = time.time()
-    begin_time = last_time
-
-    if current == 0:
-        begin_time = time.time()  # Reset for new bar.
-
-    cur_len = int(TOTAL_BAR_LENGTH * current / total)
-    rest_len = int(TOTAL_BAR_LENGTH - cur_len) - 1
-
-    sys.stdout.write(' [')
-    for i in range(cur_len):
-        sys.stdout.write('=')
-    sys.stdout.write('>')
-    for i in range(rest_len):
-        sys.stdout.write('.')
-    sys.stdout.write(']')
-
-    cur_time = time.time()
-    step_time = cur_time - last_time
-    last_time = cur_time
-    tot_time = cur_time - begin_time
-
-    L = []
-    L.append('  Step: %s' % format_time(step_time))
-    L.append(' | Tot: %s' % format_time(tot_time))
-    if msg:
-        L.append(' | ' + msg)
-
-    msg = ''.join(L)
-    sys.stdout.write(msg)
-    for i in range(term_width - int(TOTAL_BAR_LENGTH) - len(msg) - 3):
-        sys.stdout.write(' ')
-
-    # Go back to the center of the bar.
-    for i in range(term_width - int(TOTAL_BAR_LENGTH / 2) + 2):
-        sys.stdout.write('\b')
-    sys.stdout.write(' %d/%d ' % (current + 1, total))
-
-    if current < total - 1:
-        sys.stdout.write('\r')
-    else:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
-
-
-def format_time(seconds):
-    days = int(seconds / 3600 / 24)
-    seconds = seconds - days * 3600 * 24
-    hours = int(seconds / 3600)
-    seconds = seconds - hours * 3600
-    minutes = int(seconds / 60)
-    seconds = seconds - minutes * 60
-    secondsf = int(seconds)
-    seconds = seconds - secondsf
-    millis = int(seconds * 1000)
-
-    f = ''
-    i = 1
-    if days > 0:
-        f += str(days) + 'D'
-        i += 1
-    if hours > 0 and i <= 2:
-        f += str(hours) + 'h'
-        i += 1
-    if minutes > 0 and i <= 2:
-        f += str(minutes) + 'm'
-        i += 1
-    if secondsf > 0 and i <= 2:
-        f += str(secondsf) + 's'
-        i += 1
-    if millis > 0 and i <= 2:
-        f += str(millis) + 'ms'
-        i += 1
-    if f == '':
-        f = '0ms'
-    return f
-
-
 def get_logger(file_path):
     logger = logging.getLogger('gal')
     log_format = '%(asctime)s | %(message)s'
@@ -301,29 +90,6 @@ def get_logger(file_path):
     return logger, file_handler, stream_handler
 
 
-def visualizing(image, dataset, nrow, save_path, normalize=True):
-    mean = [0.0, 0.0, 0.0]
-    std = [1.0, 1.0, 1.0]
-    if normalize:
-        if dataset == "CIFAR10":
-            mean = [0.4914, 0.4822, 0.4465]
-            std = [0.2023, 0.1994, 0.2010]
-        elif dataset == "CIFAR100":
-            mean = [0.5071, 0.4866, 0.4409]
-            std = [0.2673, 0.2564, 0.2762]
-        elif dataset == "tinyimagenet":
-            mean = [0.485, 0.456, 0.406]
-            std = [0.229, 0.224, 0.225]
-        else:
-            print("warning: Can't normalize dataset:", dataset)
-    image_vis = deepcopy(image)
-    for ch in range(3):
-        image_vis[:, ch] = image_vis[:, ch] * std[ch] + mean[ch]
-    image_vis[image_vis < 0] = 0.0
-    image_vis[image_vis > 1] = 1.0
-    save_image(torch.nan_to_num(image_vis), save_path, nrow=nrow)
-
-
 def get_pretrained_model_root(dataset, model, method="original", ipc=None):
     abs_path = os.path.abspath('.')
     if method == "original":
@@ -332,15 +98,57 @@ def get_pretrained_model_root(dataset, model, method="original", ipc=None):
         return abs_path + f"/pretrained_model/{dataset}/{method}/IPC{ipc}/{model}"
 
 
-def load_syn_data(dataset, method, ipc, data_path=None):
-    model = "ConvNet" if dataset != "tinyimagenet" else "ConvNetD4"
-    syn_dst_path = f'condensed/{dataset}/{method}/IPC{ipc}/res_{method}_{dataset}_{model}_{ipc}ipc.pt'\
-                    if data_path is None else data_path
-    print('Syn Dataset Path: {}'.format(syn_dst_path))
-    syn_data = torch.load(syn_dst_path)
+def load_syn_data(data_path):
+    print('Syn Dataset Path: {}'.format(data_path))
+    syn_data = torch.load(data_path)
     syn_images, syn_labels = syn_data['data'][0][0], syn_data['data'][0][1].long()
     train_dst = TensorDataset(syn_images, syn_labels)
     return train_dst, syn_images, syn_labels
+
+
+def compute_std_mean(scores):
+    scores = np.array(scores)
+    std = np.std(scores)
+    mean = np.mean(scores)
+    return mean, std
+
+
+class ImageNet_Config:
+    imagenette_class_names = ['tench', 'springer', 'cassette player', 'chain saw', 'church', 'French horn', 'garbage truck', 'gas pump', 'golf ball', 'parachute']
+    imagenette_index = [0, 217, 482, 491, 497, 566, 569, 571, 574, 701]
+
+    imagewoof_class_names = ["Shih-Tzu", "Rhodesian ridgeback", "beagle", "English foxhound", "Border terrier", "Australian terrier", "golden retriever", "English sheepdog", "Samoyed", "dingo"]
+    imagewoof_index = [155, 159, 162, 167, 182, 193, 207, 229, 258, 273]
+
+    imagemeow_class_names = ["tabby cat", "bengal cat", "Persian cat", "Siamese cat", "Egyptian cat", "lynx", "snow leopard", "jaguar", "lion", "tiger"]
+    imagemeow_index = [281, 282, 283, 284, 285, 287, 289, 290, 291, 292]
+
+    imagesquawk_class_names = ["ostrich", "bald eagle", "peacock", "macaw", "cockatoo", "toucan", "black swan", "flamingo", "pelican", "king penguin"]
+    imagesquawk_index = [9, 22, 84, 88, 89, 96, 100, 130, 144, 145]
+
+    imagefruit_class_names = ["cucumber", "bell pepper", "green apple", "strawberry", "orange", "lemon", "fig", "pineapple", "banana", "pomegranate"]
+    imagefruit_index = [943, 945, 948, 949, 950, 951, 952, 953, 954, 957]
+
+    imageyellow_class_names = ["goldfinch",  "garden spider", "lion", "bee", "honeycomb", "school bus", "lemon", "banana", "ladys slipper", "corn"]
+    imageyellow_index = [11, 72, 291, 309, 599, 779, 951, 954, 986, 987]
+
+    index_dict = {
+        "imagenette" : imagenette_index,
+        "imagewoof" : imagewoof_index,
+        "imagefruit": imagefruit_index,
+        "imageyellow": imageyellow_index,
+        "imagemeow": imagemeow_index,
+        "imagesquawk": imagesquawk_index,
+    }
+
+    class_name_dict = {
+        "imagenette": imagenette_class_names,
+        "imagewoof": imagewoof_class_names,
+        "imagefruit": imagefruit_class_names,
+        "imageyellow": imageyellow_class_names,
+        "imagemeow": imagemeow_class_names,
+        "imagesquawk": imagesquawk_class_names,
+    }
 
 
 class ParamDiffAug():

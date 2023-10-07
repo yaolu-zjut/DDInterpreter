@@ -1,12 +1,11 @@
 import argparse
 import os
 import time
+import datetime
 
 import torch.nn.parallel
 import torch.optim
 import torch.utils.data
-import torch.utils.data.distributed
-import datetime
 from torch import nn
 
 from utils_clom.Dataloader import get_dataset
@@ -26,19 +25,21 @@ def train_model(args):
         os.makedirs(args.data_path, exist_ok=True)
 
     save_root = get_pretrained_model_root(args.dataset, args.model)
+    index = 0
+    while os.path.exists(os.path.join(save_root, f"index_{index}")):
+        index = index + 1
+    save_root = os.path.join(save_root, f"index_{index}")
+
     if not os.path.isdir(save_root):
         os.makedirs(save_root, exist_ok=True)
 
     print("data path:", args.data_path)
+    print("save path:", save_root)
 
-    index = 0
-    while os.path.exists(os.path.join(save_root, f"{args.dataset}_{args.model}_original_{index}.pt")):
-        index = index + 1
-    save_name = f"{args.dataset}_{args.model}_original_{index}.pt"
     logger_name = f"{args.dataset}_{args.model}_original_{index}_log.log"
 
     # log information
-    logger, file_handler, stream_handler = get_logger(os.path.join(save_root,logger_name))
+    logger, file_handler, stream_handler = get_logger(os.path.join(save_root,  logger_name))
     logger.info("Time: "+datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     logger.info("Dataset: "+args.dataset)
     logger.info("model: "+args.model)
@@ -52,7 +53,7 @@ def train_model(args):
     logger.info("normalize data: "+str(args.normalize_data))
 
     # load dataset
-    channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args)
+    channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args.dataset, args.data_path)
 
     # get train loader
     trainloader = torch.utils.data.DataLoader(dst_train, batch_size=args.batch_size, shuffle=True, num_workers=0)
@@ -71,20 +72,20 @@ def train_model(args):
     best_acc1 = 0.0
     # start train
     logger.info("start training")
-    for epoch in range(args.epochs):
+    for epoch in range(1, args.epochs+1):
         train_acc1, _,  loss, = train(trainloader, model, criterion, optimizer, epoch, args, aug=False)
         scheduler.step()
-        if (epoch + 1) % args.save_every == 0:
+        logger.info(f"epoch:{epoch}, train acc:{train_acc1} loss: {loss}")
+        if epoch % args.save_every == 0:
             acc1, _ = validate(testloader, model, criterion, args)
-            logger.info(f"epoch:{epoch}, train acc:{train_acc1} loss: {loss} test acc:{acc1}")
-            is_best = acc1 > best_acc1
             best_acc1 = max(acc1, best_acc1)
-            if is_best:
-                torch.save(model.state_dict(), os.path.join(save_root, save_name))
+            logger.info(f"epoch:{epoch}, test acc:{acc1}")
+            save_name = f"{args.dataset}_{args.model}_original_epoch{epoch}.pth"
+            torch.save(model.state_dict(), os.path.join(save_root, save_name))
 
     logger.info(f"dataset: {args.dataset}, model: {args.model}")
     logger.info(f"best acc: {best_acc1}")
-    logger.info(f"save path: {os.path.join(save_root, save_name)}")
+    logger.info(f"save root: {save_root}")
     logger.removeHandler(file_handler)
     logger.removeHandler(stream_handler)
 
@@ -96,8 +97,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PyTorch Testing", epilog="End of Parameters")
-    parser.add_argument("--dataset", help="name of dataset", type=str, default='FashionMNIST',
-                        choices=["MNIST", "FashionMNIST", "SVHN", "CIFAR10", "CIFAR100", "tinyimagenet"])
+    parser.add_argument("--dataset", help="name of dataset", type=str, default='CIFAR10')
+    parser.add_argument('--data_path', type=str, default=None, help='dataset path')
+
     parser.add_argument("--model", metavar="ARCH", default='ConvNet', help="model architecture")
 
     parser.add_argument("--random_seed", default=None, type=int, help="random seed")
@@ -113,9 +115,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_decay', type=float, default=0.005, help="SGD weight decay")
     parser.add_argument("--save_every", default=1, type=int, help="how many epochs to save")
     parser.add_argument('--lr_decay_step', default='50,100', type=str, help='learning rate')
-    parser.add_argument('--normalize_data', action="store_true", default=False,
-                        help='whether normalize dataset')
+    parser.add_argument('--normalize_data', action='store_true', default=False, help='whether normalize dataset')
 
-    parser.add_argument('--data_path', type=str, default=None, help='dataset path')
     args = parser.parse_args()
     main(args)

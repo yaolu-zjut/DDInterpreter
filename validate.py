@@ -1,14 +1,14 @@
 import argparse
 import os
 import time
+import datetime
 
 import torch.nn.parallel
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
-import datetime
-from torch import nn
 
+from torch import nn
 
 from utils_clom.Dataloader import get_dataset
 from utils_clom.model_pool import get_network
@@ -60,7 +60,7 @@ def main(args):
     channel, im_size, num_classes, class_names, mean, std, dst_train, dst_test, testloader = get_dataset(args)
 
     # get synthesis dataset
-    syn_dst , _, _ = load_syn_data(args.dataset, args.method, args.ipc, data_path=args.synthesis_data_path)
+    syn_dst , _, _ = load_syn_data(args.synthesis_data_path)
     trainloader = torch.utils.data.DataLoader(syn_dst, batch_size=args.batch_size, shuffle=True, num_workers=0)
 
     # get model
@@ -97,11 +97,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PyTorch Testing", epilog="End of Parameters")
-    parser.add_argument("--dataset", help="name of dataset", type=str, default='CIFAR10',
-                        choices=["MNIST", "FashionMNIST", "SVHN", "CIFAR10", "CIFAR100", "tinyimagenet"])
-    parser.add_argument("--method", help="method of spilt dataset", type=str, default='random',
-                        choices=["original", "DC", "DSA", "DM"])
-    parser.add_argument('--ipc', type=int, default=10, help='image(s) per class')
+    parser.add_argument("--dataset", help="name of dataset", type=str, default='CIFAR10')
+
     parser.add_argument("--model", metavar="ARCH", default='ConvNet', help="model architecture")
 
     parser.add_argument("--random_seed", default=None, type=int, help="random seed")
