@@ -25,7 +25,7 @@ def main(args):
     if not os.path.isdir(args.data_path):
         os.makedirs(args.data_path, exist_ok=True)
 
-    save_root = get_pretrained_model_root(args.dataset, args.method, args.ipc)
+    save_root = get_pretrained_model_root(args.dataset, args.model, args.method, args.ipc)
     if not os.path.isdir(save_root):
         os.makedirs(save_root, exist_ok=True)
 
@@ -83,9 +83,8 @@ def main(args):
             logger.info(f"epoch:{epoch}, train acc:{train_acc1} loss: {loss} test acc:{acc1}")
             is_best = acc1 > best_acc1
             best_acc1 = max(acc1, best_acc1)
-            if is_best:
-                if args.save_model:
-                    torch.save(model.state_dict(), os.path.join(save_root, save_name))
+            if args.save_model and is_best:
+                torch.save(model.state_dict(), os.path.join(save_root, save_name))
 
     logger.info(f"dataset: {args.dataset}, method: {args.method}")
     logger.info(f"best acc: {best_acc1}")
@@ -100,7 +99,8 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", help="name of dataset", type=str, default='CIFAR10')
 
     parser.add_argument("--model", metavar="ARCH", default='ConvNet', help="model architecture")
-
+    parser.add_argument('--method', type=str, default='DC', help='DC/DSA/DM')
+    parser.add_argument('--ipc', type=int, default=1, help='image(s) per class')
     parser.add_argument("--random_seed", default=None, type=int, help="random seed")
     parser.add_argument('--save_model', action="store_true", default=False, help='whether save model')
 
