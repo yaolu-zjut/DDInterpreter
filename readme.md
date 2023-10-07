@@ -52,7 +52,7 @@ python method/DC_DSA_DM/main.py --method DC --dataset CIFAR10 --model ConvNet --
 
 ## Validate synthesis dataset
 
-The following command can validate specified synthesis dataset.
+The following command is an example of validating a specified synthesis dataset.
 
 ```bash
 python validate.py --normalize_data --dataset CIFAR10 --model ConvNet --dsa --method DC --ipc 10 --synthesis_data_path <specified_path>
