@@ -1,4 +1,4 @@
-# Which Assessment Should be Prioritized in Dataset Distillation?
+# Can pre-trained models assist in dataset distillation?
 
 This is official code of paper "Can pre-trained models assist in dataset distillation?". 
 
