@@ -4,7 +4,6 @@ from utils_clom.model import *
 
 
 def get_network(model, channel, num_classes, im_size=(32, 32)):
-    torch.random.manual_seed(int(time.time() * 1000) % 100000)
     # default convnet settings
     net_width, net_depth, net_act, net_norm, net_pooling = 128, 3, 'relu', 'instancenorm', 'avgpooling'
     if model == 'MLP':
