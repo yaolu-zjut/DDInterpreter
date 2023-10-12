@@ -59,3 +59,9 @@ python validate.py --normalize_data --dataset CIFAR10 --model ConvNet --dsa --me
 ```
 
 *  Set ` --save_model` to save model.
+
+# Cite Our Paper
+If you use this code in your research, please cite our paper.
+```bash
+coming soon~
+```
