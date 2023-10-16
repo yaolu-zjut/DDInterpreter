@@ -66,5 +66,12 @@ python validate.py --normalize_data --dataset CIFAR10 --model ConvNet --dsa --me
 # Cite Our Paper
 If you use this code in your research, please cite our paper.
 ```bash
-coming soon~
+@misc{lu2023pretrained,
+      title={Can pre-trained models assist in dataset distillation?}, 
+      author={Yao Lu and Xuguang Chen and Yuchen Zhang and Jianyang Gu and Tianle Zhang and Yifan Zhang and Xiaoniu Yang and Qi Xuan and Kai Wang and Yang You},
+      year={2023},
+      eprint={2310.03295},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
