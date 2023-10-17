@@ -60,6 +60,7 @@ python validate.py --normalize_data --dataset CIFAR10 --model ConvNet --dsa --me
 
 *  Set ` --save_model` to save model.
 
+/* ==========================================================================
 # Thanks for the support
 [![Stargazers repo roster for @yaolu-zjut/DDInterpreter](https://reporoster.com/stars/yaolu-zjut/DDInterpreter)](https://github.com/yaolu-zjut/DDInterpreter/stargazers)
 
@@ -75,3 +76,5 @@ If you use this code in your research, please cite our paper.
       primaryClass={cs.CV}
 }
 ```
+   ========================================================================== */
+
