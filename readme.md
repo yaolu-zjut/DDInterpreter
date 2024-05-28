@@ -12,7 +12,7 @@ where $`M_{\mathcal{B}^\tau,\mathcal{B}^S}:=O\left(y_{\mathcal{B}^\tau}\right)O\
 
 We employ the Cross-Entropy(CE) distance for in-distribution models and cosine distance for out-of-distribution models respectively:
 
-CE distance:
+* CE distance:
 ```math
 D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}[i, j]:=\texttt{Dist}_{\mathrm{CE}}\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=-O\left(y_{\mathcal{B}_i^\tau}\right)^{\top} \log p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right),
 ```
