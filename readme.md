@@ -8,21 +8,21 @@ The **C**ontrastive **L**oss **o**f pre-trained **M**odel (**CLoM**) is defined 
 ```math
 \mathcal{L}_{\mathrm{CLoM}}(\mathcal{T}, \mathcal{S})=\sum_{\forall \mathcal{B}} \frac{\sum_{i, j} D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}} \odot M_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}}{\sum_{i, j} D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}},
 ```
-where $M_{\mathcal{B}^\tau,\mathcal{B}^S}:=O\left(y_{\mathcal{B}^\tau}\right)O\left(y_{\mathcal{B}^S}\right)^T$ , $O\left(y_{\mathcal{B}^\tau}\right)$ is the one-hot encoding of label $y_{\mathcal{B}^\tau}$ and $\odot$ denotes the Hadamard (element-wise) product of two matrices. 
+where $`M_{\mathcal{B}^\tau,\mathcal{B}^S}:=O\left(y_{\mathcal{B}^\tau}\right)O\left(y_{\mathcal{B}^S}\right)^T`$ , $`O\left(y_{\mathcal{B}^\tau}\right)`$ is the one-hot encoding of label $`y_{\mathcal{B}^\tau}`$ and $`\odot`$ denotes the Hadamard (element-wise) product of two matrices. 
 
 We employ the Cross-Entropy(CE) distance for in-distribution models and cosine distance for out-of-distribution models respectively:
 
-* CE distance:
-  ```math
-  D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}[i, j]:=\operatorname{Dist}_{\mathrm{CE}}\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=-O\left(y_{\mathcal{B}_i^\tau}\right)^{\top} \log p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right),
-  ```
-  where $p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)$ is the probability vector predicted by the pre-trained model $\theta^*$ given sample $x_{\mathcal{B}_j^{\mathcal{S}}}$.
+CE distance:
+```math
+D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}[i, j]:=\texttt{Dist}_{\mathrm{CE}}\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=-O\left(y_{\mathcal{B}_i^\tau}\right)^{\top} \log p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right),
+```
+where $` p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)`$ is the probability vector predicted by the pre-trained model $` \theta^*`$ given sample $`x_{\mathcal{B}_j^{\mathcal{S}}}`$.
   
 * cosine distance:
-  ```math
-  D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}[i, j]:=\operatorname{Dist}_{\cos }\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=1-\frac{F\left(x_{\mathcal{B}_i^\tau}\right)^{\top} F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)}{\left\|F\left(x_{\mathcal{B}_i \tau}\right)\right\|_2\left\|F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)\right\|_2}.
-  ```
-  where  $F \left(x_{\mathcal{B}_i^\tau}\right)$ denotes the output vector of either an embedding model or a classification model.
+```math
+D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}[i, j]:=\texttt{Dist}_{\cos }\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=1-\frac{F\left(x_{\mathcal{B}_i^\tau}\right)^{\top} F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)}{\left\|F\left(x_{\mathcal{B}_i \tau}\right)\right\|_2\left\|F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)\right\|_2}.
+```
+where  $` F\left(x_{\mathcal{B}_i^\tau}\right) `$ denotes the output vector of either an embedding model or a classification model.
 
 ## Setup
 
