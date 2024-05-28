@@ -13,15 +13,15 @@ where $M_{\mathcal{B}^\tau,\mathcal{B}^S}:=O\left(y_{\mathcal{B}^\tau}\right)O\l
 We employ the Cross-Entropy(CE) distance for in-distribution models and cosine distance for out-of-distribution models respectively:
 
 * CE distance:
-  ```math
-  D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}[i, j]:=\operatorname{Dist}_{\mathrm{CE}}\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=-O\left(y_{\mathcal{B}_i^\tau}\right)^{\top} \log p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right),
-  ```
+```math
+D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}[i, j]:=\operatorname{Dist}_{\mathrm{CE}}\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=-O\left(y_{\mathcal{B}_i^\tau}\right)^{\top} \log p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right),
+```
   where $p^*\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)$ is the probability vector predicted by the pre-trained model $\theta^*$ given sample $x_{\mathcal{B}_j^{\mathcal{S}}}$.
   
 * cosine distance:
-  ```math
-  D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}[i, j]:=\operatorname{Dist}_{\cos }\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=1-\frac{F\left(x_{\mathcal{B}_i^\tau}\right)^{\top} F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)}{\left\|F\left(x_{\mathcal{B}_i \tau}\right)\right\|_2\left\|F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)\right\|_2}.
-  ```
+```math
+D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}[i, j]:=\operatorname{Dist}_{\cos }\left(\mathcal{B}_i^{\mathcal{T}}, \mathcal{B}_j^{\mathcal{S}}\right):=1-\frac{F\left(x_{\mathcal{B}_i^\tau}\right)^{\top} F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)}{\left\|F\left(x_{\mathcal{B}_i \tau}\right)\right\|_2\left\|F\left(x_{\mathcal{B}_j^{\mathcal{S}}}\right)\right\|_2}.
+```
   where  $F \left(x_{\mathcal{B}_i^\tau}\right)$ denotes the output vector of either an embedding model or a classification model.
 
 ## Setup
