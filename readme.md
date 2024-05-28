@@ -6,7 +6,7 @@ This is official code of paper "Dataset Distillation with Pre-trained Models: A 
 
 The **C**ontrastive **L**oss **o**f pre-trained **M**odel (**CLoM**) is defined as:
 ```math
-\mathcal{L}_{\mathrm{CLoM}}(\mathcal{T}, \mathcal{S})=\sum_{\forall \mathcal{B}} \frac{\sum_{i, j} D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}} \odot M_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{S}}}}{\sum_{i, j} D_{\mathcal{B}^\tau, \mathcal{B}^{\mathcal{s}}}},
+D_{\mathcal B^{\mathcal T}, \mathcal B^{\mathcal S}}[i,j] := \texttt{Dist}_{\text{cos}}(\mathcal B^{\mathcal T}_{i}, \mathcal B^{\mathcal S}_{j}):= 1- \frac{F({x_{\mathcal B^{\mathcal T}_{i}})}^\top F({x_{\mathcal B^{\mathcal S}_{j}}})}{\left\|F({x_{\mathcal B^{\mathcal T}_{i}}})\right\|_2\left\|F({x_{\mathcal B^{\mathcal S}_{j}}})\right\|_2},
 ```
 where $`M_{\mathcal{B}^\tau,\mathcal{B}^S}:=O\left(y_{\mathcal{B}^\tau}\right)O\left(y_{\mathcal{B}^S}\right)^T`$ , $`O\left(y_{\mathcal{B}^\tau}\right)`$ is the one-hot encoding of label $`y_{\mathcal{B}^\tau}`$ and $`\odot`$ denotes the Hadamard (element-wise) product of two matrices. 
 
